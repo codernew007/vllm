@@ -35,7 +35,7 @@ from vllm.model_executor.layers.linear import (LinearMethodBase,
 from vllm.model_executor.layers.rotary_embedding import get_rope
 from vllm.model_executor.layers.sampler import Sampler
 from vllm.model_executor.layers.vocab_parallel_embedding import (
-    VocabParallelEmbedding, ParallelLMHead)
+    VocabParallelEmbedding, ParallelLMHead, DEFAULT_VOCAB_PADDING_SIZE)
 from vllm.model_executor.parallel_utils.parallel_state import (
     get_tensor_model_parallel_rank, get_tensor_model_parallel_world_size)
 from vllm.model_executor.sampling_metadata import SamplingMetadata
@@ -43,6 +43,7 @@ from vllm.model_executor.weight_utils import (default_weight_loader,
                                               hf_model_weights_iterator)
 from vllm.sequence import SamplerOutput
 from vllm.transformers_utils.configs.baichuan import BaiChuanConfig
+from vllm.config import LoRAConfig
 
 KVCache = Tuple[torch.Tensor, torch.Tensor]
 
@@ -247,15 +248,20 @@ class BaiChuanModel(nn.Module):
     def __init__(self,
                  config: BaiChuanConfig,
                  position_embedding: str,
-                 linear_method: Optional[LinearMethodBase] = None):
+                 linear_method: Optional[LinearMethodBase] = None,
+		 lora_config: Optional[LoRAConfig] = None,):
         super().__init__()
         self.config = config
         self.padding_idx = config.pad_token_id
-        self.vocab_size = config.vocab_size
+        lora_vocab = (lora_config.lora_extra_vocab_size *
+                      (lora_config.max_loras or 1)) if lora_config else 0
+        self.vocab_size = config.vocab_size + lora_vocab
+        self.org_vocab_size = config.vocab_size
 
         self.embed_tokens = VocabParallelEmbedding(
-            config.vocab_size,
+            self.vocab_size,
             config.hidden_size,
+	    org_num_embeddings=config.vocab_size,
         )
         self.layers = nn.ModuleList([
             BaiChuanDecoderLayer(config, position_embedding, linear_method)
@@ -286,17 +292,31 @@ class BaiChuanModel(nn.Module):
 
 
 class BaiChuanBaseForCausalLM(nn.Module):
+    supports_lora=True
 
     def __init__(self,
                  config,
                  position_embedding: str,
-                 linear_method: Optional[LinearMethodBase] = None):
+                 linear_method: Optional[LinearMethodBase] = None,
+		 lora_config: Optional[LoRAConfig] = None,):
         super().__init__()
         self.config = config
         self.linear_method = linear_method
-        self.model = BaiChuanModel(config, position_embedding, linear_method)
-        self.lm_head = ParallelLMHead(config.vocab_size, config.hidden_size)
-        self.sampler = Sampler(config.vocab_size)
+        # refer to llama.py
+        self.model = BaiChuanModel(config, position_embedding, linear_method, lora_config=lora_config)
+        unpadded_vocab_size = config.vocab_size
+        if lora_config:
+            unpadded_vocab_size += lora_config.lora_extra_vocab_size
+        self.lm_head = ParallelLMHead(
+            unpadded_vocab_size,
+            config.hidden_size,
+            org_num_embeddings=config.vocab_size,
+            padding_size=DEFAULT_VOCAB_PADDING_SIZE
+            # We need bigger padding if using lora for kernel
+            # compatibility
+            if not lora_config else lora_config.lora_vocab_padding_size,
+        )
+        self.sampler = Sampler(unpadded_vocab_size, config.vocab_size)
 
     def forward(
         self,
@@ -370,11 +390,12 @@ class BaichuanForCausalLM(BaiChuanBaseForCausalLM):
 
     def __init__(self,
                  config,
-                 linear_method: Optional[LinearMethodBase] = None):
+                 linear_method: Optional[LinearMethodBase] = None,
+		 lora_config: Optional[LoRAConfig] = None,):
         if config.hidden_size == 4096:  # baichuan2 7b
-            super().__init__(config, "ROPE", linear_method)
+            super().__init__(config, "ROPE", linear_method, lora_config)
         else:  # baichuan 13b, baichuan2 13b
-            super().__init__(config, "ALIBI", linear_method)
+            super().__init__(config, "ALIBI", linear_method, lora_config)
 
 
 class BaiChuanForCausalLM(BaiChuanBaseForCausalLM):
@@ -382,5 +403,6 @@ class BaiChuanForCausalLM(BaiChuanBaseForCausalLM):
 
     def __init__(self,
                  config,
-                 linear_method: Optional[LinearMethodBase] = None):
-        super().__init__(config, "ROPE", linear_method)
+                 linear_method: Optional[LinearMethodBase] = None,
+		 lora_config: Optional[LoRAConfig] = None,):
+        super().__init__(config, "ROPE", linear_method, lora_config)

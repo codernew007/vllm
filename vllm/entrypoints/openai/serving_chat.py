@@ -68,7 +68,7 @@ class OpenAIServingChat(OpenAIServing):
             return self.create_error_response(str(e))
 
         result_generator = self.engine.generate(prompt, sampling_params,
-                                                request_id, token_ids)
+                                                request_id, token_ids, lora_request=request.lora_request)
         # Streaming response
         if request.stream:
             return self.chat_completion_stream_generator(

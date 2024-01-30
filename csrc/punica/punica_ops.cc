@@ -92,202 +92,66 @@ void dispatch_bgmv(torch::Tensor y, torch::Tensor x, torch::Tensor w,
   CHECK_EQ(indicies.size(0), x.size(0));
   CHECK_EQ(y.size(0), x.size(0));
   bool ok = false;
-  if (h_in < 65536 && h_out < 65536) {
+  //if (h_in < 65536 && h_out < 65536) {
     // TODO: See if we can get rid of this massive nested switch
-    switch (x.scalar_type()) {
+  switch (x.scalar_type()) {
+  case at::ScalarType::Half:
+    switch (y.scalar_type()) {
     case at::ScalarType::Half:
-      switch (y.scalar_type()) {
+      switch (w.scalar_type()) {
       case at::ScalarType::Half:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
         break;
       case at::ScalarType::BFloat16:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        default:
-          break;
-        }
-        break;
-      case at::ScalarType::Float:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
         break;
       default:
         break;
       }
       break;
     case at::ScalarType::BFloat16:
-      switch (y.scalar_type()) {
+      switch (w.scalar_type()) {
       case at::ScalarType::Half:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
         break;
       case at::ScalarType::BFloat16:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        default:
-          break;
-        }
-        break;
-      case at::ScalarType::Float:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
         break;
       default:
         break;
       }
       break;
     case at::ScalarType::Float:
-      switch (y.scalar_type()) {
+      switch (w.scalar_type()) {
       case at::ScalarType::Half:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
         break;
       case at::ScalarType::BFloat16:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        default:
-          break;
-        }
-        break;
-      case at::ScalarType::Float:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out, 0,
-                                  h_out, B, num_layers, layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
         break;
       default:
         break;
@@ -296,7 +160,143 @@ void dispatch_bgmv(torch::Tensor y, torch::Tensor x, torch::Tensor w,
     default:
       break;
     }
+    break;
+  case at::ScalarType::BFloat16:
+    switch (y.scalar_type()) {
+    case at::ScalarType::Half:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    case at::ScalarType::BFloat16:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    case at::ScalarType::Float:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+  case at::ScalarType::Float:
+    switch (y.scalar_type()) {
+    case at::ScalarType::Half:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    case at::ScalarType::BFloat16:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    case at::ScalarType::Float:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out, 0,
+                                h_out, B, num_layers, layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+  default:
+    break;
   }
+  
   TORCH_CHECK(ok, "No suitable kernel.", " h_in=", h_in, " h_out=", h_out,
               " dtype=", x.scalar_type(), " out_dtype=", y.scalar_type());
 }
@@ -323,220 +323,72 @@ void dispatch_bgmv_low_level(torch::Tensor y, torch::Tensor x, torch::Tensor w,
   CHECK_EQ(indicies.size(0), x.size(0));
   CHECK_EQ(y.size(0), x.size(0));
   bool ok = false;
-  if (h_in < 65536 && h_out < 65536) {
+  // if (h_in < 65536 && h_out < 65536) {
     // TODO: See if we can get rid of this massive nested switch
-    switch (x.scalar_type()) {
+  switch (x.scalar_type()) {
+  case at::ScalarType::Half:
+    switch (y.scalar_type()) {
     case at::ScalarType::Half:
-      switch (y.scalar_type()) {
+      switch (w.scalar_type()) {
       case at::ScalarType::Half:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
         break;
       case at::ScalarType::BFloat16:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        default:
-          break;
-        }
-        break;
-      case at::ScalarType::Float:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<nv_half *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
         break;
       default:
         break;
       }
       break;
     case at::ScalarType::BFloat16:
-      switch (y.scalar_type()) {
+      switch (w.scalar_type()) {
       case at::ScalarType::Half:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
         break;
       case at::ScalarType::BFloat16:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        default:
-          break;
-        }
-        break;
-      case at::ScalarType::Float:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
         break;
       default:
         break;
       }
       break;
     case at::ScalarType::Float:
-      switch (y.scalar_type()) {
+      switch (w.scalar_type()) {
       case at::ScalarType::Half:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
         break;
       case at::ScalarType::BFloat16:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        default:
-          break;
-        }
-        break;
-      case at::ScalarType::Float:
-        switch (w.scalar_type()) {
-        case at::ScalarType::Half:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_half *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        case at::ScalarType::BFloat16:
-          ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
-                                  static_cast<float *>(x.data_ptr()),
-                                  static_cast<nv_bfloat16 *>(w.data_ptr()),
-                                  indicies.data_ptr<int64_t>(), h_in, h_out,
-                                  y_offset, full_y_size, B, num_layers,
-                                  layer_idx, scale);
-          break;
-        default:
-          break;
-        }
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<nv_half *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
         break;
       default:
         break;
@@ -545,7 +397,155 @@ void dispatch_bgmv_low_level(torch::Tensor y, torch::Tensor x, torch::Tensor w,
     default:
       break;
     }
+    break;
+  case at::ScalarType::BFloat16:
+    switch (y.scalar_type()) {
+    case at::ScalarType::Half:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    case at::ScalarType::BFloat16:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    case at::ScalarType::Float:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<nv_bfloat16 *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+  case at::ScalarType::Float:
+    switch (y.scalar_type()) {
+    case at::ScalarType::Half:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<nv_half *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    case at::ScalarType::BFloat16:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<nv_bfloat16 *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    case at::ScalarType::Float:
+      switch (w.scalar_type()) {
+      case at::ScalarType::Half:
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_half *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      case at::ScalarType::BFloat16:
+        ok = launch_bgmv_kernel(static_cast<float *>(y.data_ptr()),
+                                static_cast<float *>(x.data_ptr()),
+                                static_cast<nv_bfloat16 *>(w.data_ptr()),
+                                indicies.data_ptr<int64_t>(), h_in, h_out,
+                                y_offset, full_y_size, B, num_layers,
+                                layer_idx, scale);
+        break;
+      default:
+        break;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+  default:
+    break;
   }
+  
   TORCH_CHECK(ok, "No suitable kernel.", " h_in=", h_in, " h_out=", h_out,
               " dtype=", x.scalar_type(), " out_dtype=", y.scalar_type());
 }

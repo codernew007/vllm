@@ -41,6 +41,7 @@ TARGET_MODULES_QKV = [
     "down_proj",
     "embed_tokens",
     "lm_head",
+#    "W_pack",
 ]
 
 EMBEDDING_MODULES = {
